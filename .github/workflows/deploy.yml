@@ -15,8 +15,8 @@ jobs:
 
       - name: Copy files to Web Root
         run: |
-          # ใช้ sudo เพื่อให้มีสิทธิ์เขียนไฟล์ในโฟลเดอร์ของ aaPanel
-          sudo rsync -avz --exclude='.git' ./ /www/wwwroot/sitenews.com/
+          # ยกเว้นการยุ่งกับ .git และ .user.ini ตอน rsync
+          sudo rsync -avz --exclude='.git' --exclude='.user.ini' ./ /www/wwwroot/sitenews.com/
           
-          # ปรับ owner ให้เป็น www เพื่อให้ Nginx/PHP ทำงานได้ปกติ
-          sudo chown -R www:www /www/wwwroot/sitenews.com/
+          # เปลี่ยน owner โดยยกเว้นไฟล์ .user.ini
+          sudo find /www/wwwroot/sitenews.com/ -maxdepth 1 -name '.user.ini' -prune -o -exec chown -R www:www {} +
