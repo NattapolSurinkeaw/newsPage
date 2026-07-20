@@ -15,8 +15,8 @@ jobs:
 
       - name: Copy files to Web Root
         run: |
-          # ยกเว้นการยุ่งกับ .git และ .user.ini ตอน rsync
+          # 1. Sync โค้ดโดยข้าม .git และ .user.ini
           sudo rsync -avz --exclude='.git' --exclude='.user.ini' ./ /www/wwwroot/sitenews.com/
           
-          # เปลี่ยน owner โดยยกเว้นไฟล์ .user.ini
-          sudo find /www/wwwroot/sitenews.com/ -maxdepth 1 -name '.user.ini' -prune -o -exec chown -R www:www {} +
+          # 2. ปรับ Owner ให้ www:www โดยระบุเจาะจงเฉพาะสิ่งที่ซิงก์ลงไป (ไม่ไปโดน .user.ini)
+          sudo chown -R www:www /www/wwwroot/sitenews.com/*
