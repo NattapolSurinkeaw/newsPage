@@ -1,0 +1,22 @@
+name: Deploy to aaPanel (Local)
+
+on:
+  push:
+    branches:
+      - master  # ให้ทำงานเมื่อมี Push ไปที่ branch master
+
+jobs:
+  deploy:
+    runs-on: self-hosted  # สั่งให้รันบนเครื่อง Ubuntu ของเราเอง
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Copy files to Web Root
+        run: |
+          # คัดลอกไฟล์โปรเจกต์ไปไว้ในโฟลเดอร์เว็บของ aaPanel
+          rsync -avz --exclude='.git' ./ /www/wwwroot/10.0.2.15/
+          
+          # เปลี่ยน Permissions ให้ Nginx/PHP อ่านไฟล์ได้ถูกต้อง
+          chown -R www:www /www/wwwroot/10.0.2.15/
