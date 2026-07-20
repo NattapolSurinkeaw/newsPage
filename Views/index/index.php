@@ -2,7 +2,7 @@
 <?php require_once __DIR__ . "/../layouts/header.php"; ?>
 
 <div class="container">
-    <h1>Gogog</h1>
+    <h1>LetGo</h1>
     <div style="display: flex">
         <div style="background-color: #f1f1f1; padding: 10px; width: 200px;">
             <h3>Sidebar</h3>
