@@ -4,22 +4,9 @@ namespace Core;
 
 class BaseController
 {
-    protected $Database;
-    protected string $Model;
-
+    // ลบ $Database และ $Model ออกได้เลยครับ
     public function __construct()
     {
-        if (isset($this->Model)) {
-            $Model = 'Models\\' . $this->Model;
-        } else {
-            $Controller = explode('\\', static::class);
-            $Model = 'Models\\' . end($Controller);
-        }
-
-        if (file_exists(str_replace('\\',DIRECTORY_SEPARATOR, $Model) . ".php")) {
-            $this->Database = new $Model();
-        } else {
-            throw new Exception('There is problem with your model files');
-        }
+        // สามารถปล่อยว่างไว้ หรือใส่ Logic อื่นๆ ที่ทุก Controller ต้องใช้ร่วมกัน
     }
 }

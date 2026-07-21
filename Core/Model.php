@@ -2,146 +2,106 @@
 
 namespace Core;
 
-
 use PDO;
 use PDOException;
 
 class Model
 {
+    protected static ?PDO $db = null;
 
     /**
-     * @return PDO|null
+     * ดึงตัวเชื่อมต่อ PDO (ใช้ Singleton เพื่อไม่ให้เชื่อมต่อซ้ำซ้อน)
      */
     public function Connect(): ?PDO
     {
-        $conn = NULL;
-        try {
-            //Install database
-            $conn = new PDO("mysql:host=" . config('host') . ";charset=utf8", config('user'), config('pass'));
-            // set the PDO error mode to exception
-            $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $sql = "CREATE DATABASE IF NOT EXISTS " . config('db_name');
-            // use exec() because no results are returned
-            $conn->exec($sql);
-            $conn->exec("USE " . config('db_name'));
-        } catch (PDOException $e) {
-            dd($e->getMessage());
+        if (self::$db === null) {
+            try {
+                $conn = new PDO("mysql:host=" . config('host') . ";charset=utf8", config('user'), config('pass'));
+                $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                $conn->exec("CREATE DATABASE IF NOT EXISTS " . config('db_name'));
+                $conn->exec("USE " . config('db_name'));
+                
+                self::$db = $conn;
+            } catch (PDOException $e) {
+                dd($e->getMessage());
+            }
         }
-        return $conn;
+        return self::$db;
     }
 
     /**
-     * @param $conn
+     * Magic Method ช่วยให้เรียก Class::method() แบบ Static ได้สะดวก
      */
-    private function disconnect($conn)
+    public static function __callStatic($method, $args)
     {
-        unset($conn);
+        $instance = new static(); // สร้าง Object ของ Model ขึ้นมาอัตโนมัติ
+        
+        if (method_exists($instance, $method)) {
+            return call_user_func_array([$instance, $method], $args);
+        }
+
+        throw new \Exception("Method {$method} does not exist in " . static::class);
     }
 
     /**
-     * @param string $sql
-     * @param array $value
-     * @param false $LastID
-     * @return bool|string
+     * Helper สำหรับ Bind ค่าใน PDO แบบอัตโนมัติ (รองรับทั้งแบบ :key และตัวเลข)
      */
-    public function InsertRow(string $sql, array $value = [], bool $LastID = false)
+    private function bindValues($stmt, array $value)
     {
-        $result = null;
-        $conn = $this->Connect();
-        //Insert the Data in Database
-        $stmt = $conn->prepare($sql);
-        if (!count($value) == 0 and !$value == NULL):
-            foreach ($value as $Key => $Value):
-                $stmt->bindValue($Key + 1, $Value);
-            endforeach;
-        endif;
-        if ($stmt->execute()):
-            $result = true;
-            if ($LastID) :
-                $result = $conn->lastInsertId();
-            endif;
-        else:
-            $result = false;
-            $this->disconnect($conn);
-        endif;
-        return $result;
+        foreach ($value as $key => $val) {
+            if (is_int($key)) {
+                $stmt->bindValue($key + 1, $val);
+            } else {
+                $param = (strpos($key, ':') === 0) ? $key : ":" . $key;
+                $stmt->bindValue($param, $val);
+            }
+        }
     }
 
-    /**
-     * @param string $sql
-     * @param array $value
-     * @param false $fetch
-     * @return mixed
-     */
     public function SelectRow(string $sql, array $value = [], bool $fetch = false)
     {
-        $result = NULL;
         $conn = $this->Connect();
-        //Select the Data in Database
         $stmt = $conn->prepare($sql);
-        if (!count($value) == 0 and !$value == NULL) :
-            foreach ($value as $key => $Value) :
-                $param = (strpos($key, ':') === 0) ? $key : ":" . $key;
-                $stmt->bindValue($param, $Value);
-            endforeach;
-        endif;
-        if ($stmt->execute()) :
-            if ($fetch) :
-                $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            else :
-                $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            endif;
-        else :
-            $result = false;
-            $this->disconnect($conn);
-        endif;
-        return $result;
+        
+        if (!empty($value)) {
+            $this->bindValues($stmt, $value);
+        }
+
+        if ($stmt->execute()) {
+            return $fetch ? $stmt->fetch(PDO::FETCH_ASSOC) : $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+        return false;
     }
 
-    /**
-     * @param string $sql
-     * @param array $value
-     * @return bool
-     */
-    public function UpdateRow(string $sql, array $value): bool
+    public function InsertRow(string $sql, array $value = [], bool $LastID = false)
     {
         $conn = $this->Connect();
-        //Update the Data in Database
         $stmt = $conn->prepare($sql);
-        if (!count($value) == 0 and !$value == NULL):
-            foreach ($value as $Key => $Value):
-                $stmt->bindValue($Key + 1, $Value);
-            endforeach;
-        endif;
 
-        if ($stmt->execute()) :
-            $result = true;
-        else :
-            $result = false;
-            $this->disconnect($conn);
-        endif;
-        return $result;
+        if (!empty($value)) {
+            $this->bindValues($stmt, $value);
+        }
+
+        if ($stmt->execute()) {
+            return $LastID ? $conn->lastInsertId() : true;
+        }
+        return false;
     }
 
+    public function UpdateRow(string $sql, array $value = []): bool
+    {
+        $conn = $this->Connect();
+        $stmt = $conn->prepare($sql);
+
+        if (!empty($value)) {
+            $this->bindValues($stmt, $value);
+        }
+
+        return $stmt->execute();
+    }
 
     public function DeleteRow(string $sql, array $value = []): bool
     {
-        $conn = $this->Connect();
-        //Update the Data in Database
-        $stmt = $conn->prepare($sql);
-        if (!count($value) == 0 and !$value == NULL):
-            foreach ($value as $Key => $Value):
-                $stmt->bindValue($Key + 1, $Value);
-            endforeach;
-        endif;
-
-        if ($stmt->execute()) :
-            $result = true;
-        else :
-            $result = false;
-            $this->disconnect($conn);
-        endif;
-        return $result;
+        return $this->UpdateRow($sql, $value);
     }
-
 }
