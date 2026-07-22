@@ -10,6 +10,14 @@ class Model
     protected static ?PDO $db = null;
 
     /**
+     * Helper สำหรับสร้าง Instance ตัวเองใน Static Context
+     */
+    protected static function getInstance(): static
+    {
+        return new static();
+    }
+
+    /**
      * ดึงตัวเชื่อมต่อ PDO (ใช้ Singleton เพื่อไม่ให้เชื่อมต่อซ้ำซ้อน)
      */
     public function Connect(): ?PDO

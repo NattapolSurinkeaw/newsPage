@@ -6,15 +6,15 @@ use Core\Model;
 
 class Category extends Model
 {
-    public function getCategory()
+    public static function getCategory()
     {
         $Query = "SELECT * FROM categories WHERE `status_display` = 1";
-        return $this->SelectRow($Query);
+        return static::getInstance()->SelectRow($Query);
     }
 
-    public function getCategoryById(int $id)
+    public static function getCategoryById(int $id)
     {
         $Query = "SELECT * FROM categories WHERE `id` = :id AND `status_display` = 1";
-        return $this->SelectRow($Query, ['id' => $id], true);
+        return static::getInstance()->SelectRow($Query, ['id' => $id], true);
     }
 }
