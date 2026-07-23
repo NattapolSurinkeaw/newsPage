@@ -11,8 +11,12 @@ function dd($v)
 function view($Name, $Data = [])
 {
     extract($Data);
-    if (file_exists(__DIR__ . "/../Views/$Name.php")):
-        require_once __DIR__ . "/../Views/$Name.php";
+    
+    // เปลี่ยน / ให้ตาม OS (Windows เป็น \, Linux เป็น /)
+    $viewPath = __DIR__ . '/../Views/' . str_replace('/', DIRECTORY_SEPARATOR, $Name) . '.php';
+
+    if (file_exists($viewPath)):
+        require $viewPath; // ใช้ require เพื่อให้โหลดซ้ำได้ถ้าจำเป็น
     else:
         echo "<h1 style='color: red;text-align: center'>View [$Name] Not found</h1>";
         exit();
